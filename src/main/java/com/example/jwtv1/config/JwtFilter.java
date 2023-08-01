@@ -1,6 +1,7 @@
 package com.example.jwtv1.config;
 
 import com.example.jwtv1.JwtService;
+import com.example.jwtv1.logoutToken.TokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,8 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtService jwtService;
     @Autowired
     private  UserDetailsService userDetailsService;
+    @Autowired
+    private TokenRepository tokenRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -44,16 +47,26 @@ public class JwtFilter extends OncePerRequestFilter {
             //Get user that was authenticated from database
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-            //Build authentication token with the user taken from the database
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    userDetails.getAuthorities()
-            );
+            //Find token and checks if it is valid
+            var isTokenValid = tokenRepository.findByToken(jwt)
+                    .map(t -> !t.isExpired() && !t.isRevoked())
+                    .orElse(false);
 
-            //Set the security context holder to the authentication token generated
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            //If token is valid
+            if(jwtService.isTokenValid(jwt,userDetails) && isTokenValid){
+
+                //Build authentication token with the user taken from the database
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+                //Set the security context holder to the authentication token generated
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            }
+
         }
 
         //Jumps to the next filter

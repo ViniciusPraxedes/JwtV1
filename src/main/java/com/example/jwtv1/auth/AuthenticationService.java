@@ -1,6 +1,9 @@
 package com.example.jwtv1.auth;
 
 import com.example.jwtv1.JwtService;
+import com.example.jwtv1.logoutToken.Token;
+import com.example.jwtv1.logoutToken.TokenRepository;
+import com.example.jwtv1.logoutToken.TokenType;
 import com.example.jwtv1.user.Role;
 import com.example.jwtv1.user.User;
 import com.example.jwtv1.user.UserRepository;
@@ -20,6 +23,8 @@ public class AuthenticationService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TokenRepository tokenRepository;
     @Autowired
     private JwtService jwtService;
     @Autowired
@@ -45,6 +50,12 @@ public class AuthenticationService {
             //Generates jwt that is going to be returned to the user
             String jwt = jwtService.generateTokenWithoutExtraClaims(user);
 
+            //Generates this token in order to save the jwt token to the database
+            Token token = new Token(jwt, TokenType.BEARER,false,false,user);
+
+            //Saves the token to the database
+            tokenRepository.save(token);
+
             //Returns Jwt and http status 200
             return new ResponseEntity<>(jwt, HttpStatus.OK);
         }
@@ -64,6 +75,15 @@ public class AuthenticationService {
             //Generate jwt token
             String jwt = jwtService.generateTokenWithoutExtraClaims(userRepository.findByEmail(body.getEmail()).get());
 
+            //Generates this token in order to save the jwt token to the database
+            Token token = new Token(jwt, TokenType.BEARER,false,false,userRepository.findByEmail(body.getEmail()).get());
+
+            //Revoke all existing tokens before saving the new one to the database
+            revokeAllUserTokens(userRepository.findByEmail(body.getEmail()).get());
+
+            //Saves the token to the database
+            tokenRepository.save(token);
+
             //Return jwt token and status code 200
             return new ResponseEntity<>(jwt,HttpStatus.OK);
 
@@ -71,5 +91,25 @@ public class AuthenticationService {
             return new ResponseEntity<>("Authentication has failed", HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+    private void revokeAllUserTokens(User user){
+        //Gets all tokens associated with the user
+        var validUserTokens = tokenRepository.findAllValidTokensByUser(user.getId());
+
+        //Checks if there are valid tokens
+        if (validUserTokens.isEmpty()) {
+            return;
+        }else {
+
+            //Set expire and revoked to true for all tokens
+            validUserTokens.forEach(t -> {
+                t.setExpired(true);
+                t.setRevoked(true);
+            });
+
+            //Save them to the database
+            tokenRepository.saveAll(validUserTokens);
+        }
     }
 }
