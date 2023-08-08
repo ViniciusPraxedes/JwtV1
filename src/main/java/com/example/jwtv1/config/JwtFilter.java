@@ -1,12 +1,17 @@
 package com.example.jwtv1.config;
 
-import com.example.jwtv1.JwtService;
+import com.example.jwtv1.service.JwtService;
 import com.example.jwtv1.logoutToken.TokenRepository;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,8 +19,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -25,6 +32,14 @@ public class JwtFilter extends OncePerRequestFilter {
     private  UserDetailsService userDetailsService;
     @Autowired
     private TokenRepository tokenRepository;
+    private HandlerExceptionResolver exceptionResolver;
+
+    public JwtFilter(JwtService jwtService, UserDetailsService userDetailsService, TokenRepository tokenRepository,@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+        this.tokenRepository = tokenRepository;
+        this.exceptionResolver = exceptionResolver;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -32,42 +47,53 @@ public class JwtFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
+
+        //Surrounds with try catch
+        try{
         //If the header is null or does not have "Bearer " then jump to the next filter
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
 
-        //If email is not null and the Authentication was successful
-        if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
 
-            //Get user that was authenticated from database
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            jwt = authHeader.substring(7);
+            userEmail = jwtService.extractUsername(jwt);
 
-            //Find token and checks if it is valid
-            var isTokenValid = tokenRepository.findByToken(jwt)
-                    .map(t -> !t.isExpired() && !t.isRevoked())
-                    .orElse(false);
+            //If email is not null and the Authentication was successful
+            if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
 
-            //If token is valid
-            if(jwtService.isTokenValid(jwt,userDetails) && isTokenValid){
+                //Get user that was authenticated from database
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-                //Build authentication token with the user taken from the database
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+                //Find token and checks if it is valid
+                var isTokenValid = tokenRepository.findByToken(jwt)
+                        .map(t -> !t.isExpired() && !t.isRevoked())
+                        .orElseThrow(() -> new RuntimeException("Something went wrong"));
 
-                //Set the security context holder to the authentication token generated
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                //If token is valid
+                if(jwtService.isTokenValid(jwt,userDetails) && isTokenValid){
+
+                    //Build authentication token with the user taken from the database
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+                    //Set the security context holder to the authentication token generated
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
+
             }
 
+        //Ends the try catch
+        }catch (ExpiredJwtException | MalformedJwtException |NoSuchElementException e){
+            exceptionResolver.resolveException(request, response, null, e);
         }
+
 
         //Jumps to the next filter
         filterChain.doFilter(request, response);

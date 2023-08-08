@@ -1,6 +1,8 @@
-package com.example.jwtv1.auth;
+package com.example.jwtv1.service;
 
-import com.example.jwtv1.JwtService;
+import com.example.jwtv1.auth.LoginDTO;
+import com.example.jwtv1.auth.RegisterDTO;
+import com.example.jwtv1.service.JwtService;
 import com.example.jwtv1.logoutToken.Token;
 import com.example.jwtv1.logoutToken.TokenRepository;
 import com.example.jwtv1.logoutToken.TokenType;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,11 +32,11 @@ public class AuthenticationService {
     private JwtService jwtService;
     @Autowired
     private AuthenticationManager authenticationManager;
-    public ResponseEntity<String> register(RegisterDTO body){
+    public ResponseEntity<?> register(RegisterDTO body){
 
         //Checks if user with the same email already exists in the database
         if (userRepository.findByEmail(body.getEmail()).isPresent()){
-            return new ResponseEntity<>("Email taken",HttpStatus.BAD_REQUEST);
+            throw new IllegalStateException("Email taken");
         }else {
 
             //Creates user
@@ -63,8 +66,8 @@ public class AuthenticationService {
 
     public ResponseEntity<String> login(LoginDTO body){
 
-        //If user exists in the database
-        if (userRepository.findByEmail(body.getEmail()).isPresent()){
+        //Checks if user exists in the database and if the password matches
+        if (userRepository.findByEmail(body.getEmail()).isPresent() && passwordEncoder.matches(body.getPassword(), userRepository.findByEmail(body.getEmail()).get().getPassword())){
 
             //Then generate an authentication token with this user credentials
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(body.getEmail(),body.getPassword());
@@ -88,7 +91,7 @@ public class AuthenticationService {
             return new ResponseEntity<>(jwt,HttpStatus.OK);
 
         }else {
-            return new ResponseEntity<>("Authentication has failed", HttpStatus.BAD_REQUEST);
+            throw new UsernameNotFoundException("User not found");
         }
 
     }
@@ -112,4 +115,6 @@ public class AuthenticationService {
             tokenRepository.saveAll(validUserTokens);
         }
     }
+
+
 }
