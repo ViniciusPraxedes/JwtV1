@@ -11,14 +11,14 @@ import lombok.NoArgsConstructor;
 @Entity
 public class Token {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long Id;
     private String token;
     @Enumerated(EnumType.STRING)
     private TokenType tokenType;
     private boolean expired;
     private boolean revoked;
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     @JoinColumn(name = "user_id")
     private User user;
 
