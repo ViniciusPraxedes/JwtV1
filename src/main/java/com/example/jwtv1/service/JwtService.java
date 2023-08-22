@@ -1,6 +1,7 @@
 package com.example.jwtv1.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -64,7 +65,12 @@ public class JwtService {
 
     //Checks if token is expired
     public boolean isTokenExpired(String token){
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+        try{
+            extractClaim(token, Claims::getExpiration).before(new Date());
+        }catch (ExpiredJwtException e){
+            return true;
+        }
+        return false;
     }
 
     //Checks if the token is valid

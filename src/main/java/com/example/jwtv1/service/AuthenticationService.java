@@ -2,7 +2,6 @@ package com.example.jwtv1.service;
 
 import com.example.jwtv1.auth.LoginDTO;
 import com.example.jwtv1.auth.RegisterDTO;
-import com.example.jwtv1.service.JwtService;
 import com.example.jwtv1.logoutToken.Token;
 import com.example.jwtv1.logoutToken.TokenRepository;
 import com.example.jwtv1.logoutToken.TokenType;
@@ -32,7 +31,7 @@ public class AuthenticationService {
     private JwtService jwtService;
     @Autowired
     private AuthenticationManager authenticationManager;
-    public ResponseEntity<?> register(RegisterDTO body){
+    public ResponseEntity<String> register(RegisterDTO body){
 
         //Checks if user with the same email already exists in the database
         if (userRepository.findByEmail(body.getEmail()).isPresent()){
