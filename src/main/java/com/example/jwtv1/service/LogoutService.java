@@ -5,8 +5,6 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
@@ -16,13 +14,12 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Service
 public class LogoutService implements LogoutHandler {
-
-    @Autowired
     private TokenRepository tokenRepository;
     private HandlerExceptionResolver exceptionResolver;
-
-    public LogoutService(@Qualifier("handlerExceptionResolver")HandlerExceptionResolver exceptionResolver) {
+    @Autowired
+    public LogoutService(@Qualifier("handlerExceptionResolver")HandlerExceptionResolver exceptionResolver, TokenRepository tokenRepository) {
         this.exceptionResolver = exceptionResolver;
+        this.tokenRepository = tokenRepository;
     }
 
     @Override

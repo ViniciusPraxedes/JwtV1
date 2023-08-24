@@ -21,14 +21,17 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 @Configuration
 @EnableWebSecurity
-@AllArgsConstructor
 public class SecurityConfig {
     @Autowired
-    private JwtFilter jwtFilter;
-    @Autowired
-    private LogoutHandler logoutHandler;
-    @Autowired
-    private UserService userDetailsService;
+    private  JwtFilter jwtFilter;
+    private final LogoutHandler logoutHandler;
+    private final UserService userDetailsService;
+
+    public SecurityConfig(JwtFilter jwtFilter, LogoutHandler logoutHandler, UserService userDetailsService) {
+        this.jwtFilter = jwtFilter;
+        this.logoutHandler = logoutHandler;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{

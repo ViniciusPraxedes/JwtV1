@@ -36,13 +36,10 @@ class AuthenticationServiceTest {
     private AuthenticationManager authenticationManager;
     @Mock
     private PasswordEncoder passwordEncoder;
-
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private TokenRepository tokenRepository;
-
     @Mock
     private JwtService jwtService;
     @InjectMocks

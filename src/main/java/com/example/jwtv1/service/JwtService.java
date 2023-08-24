@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
+
     //Secret key used to sing the tokens
     public static final String SECRET_KEY = "Jjwpf3CxQefxQ5i2Gc6l6uD/NZAkFH+XmyK7VDb5lG6agLZpMQTV/E1vHYGRACfg";
 

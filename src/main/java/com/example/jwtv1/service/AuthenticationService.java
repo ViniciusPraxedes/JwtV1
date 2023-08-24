@@ -8,8 +8,6 @@ import com.example.jwtv1.logoutToken.TokenType;
 import com.example.jwtv1.user.Role;
 import com.example.jwtv1.user.User;
 import com.example.jwtv1.user.UserRepository;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,18 +17,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
 public class AuthenticationService {
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
+    private  PasswordEncoder passwordEncoder;
     private UserRepository userRepository;
-    @Autowired
     private TokenRepository tokenRepository;
-    @Autowired
     private JwtService jwtService;
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private  AuthenticationManager authenticationManager;
+
+    public AuthenticationService(PasswordEncoder passwordEncoder, UserRepository userRepository, TokenRepository tokenRepository, JwtService jwtService, AuthenticationManager authenticationManager) {
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+        this.tokenRepository = tokenRepository;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+    }
+
     public ResponseEntity<String> register(RegisterDTO body){
 
         //Checks if user with the same email already exists in the database
@@ -101,7 +102,6 @@ public class AuthenticationService {
 
         //Checks if there are valid tokens
         if (validUserTokens.isEmpty()) {
-            return;
         }else {
 
             //Set expire and revoked to true for all tokens

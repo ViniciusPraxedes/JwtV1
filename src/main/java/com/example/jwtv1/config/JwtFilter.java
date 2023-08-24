@@ -8,9 +8,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,15 +26,11 @@ import java.util.NoSuchElementException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
-    @Autowired
-    private JwtService jwtService;
-    @Autowired
+    private  JwtService jwtService;
     private  UserDetailsService userDetailsService;
-    @Autowired
-    private TokenRepository tokenRepository;
-    private HandlerExceptionResolver exceptionResolver;
-
-    public JwtFilter(JwtService jwtService, UserDetailsService userDetailsService, TokenRepository tokenRepository,@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+    private  TokenRepository tokenRepository;
+    private  HandlerExceptionResolver exceptionResolver;
+    public JwtFilter(JwtService jwtService, UserDetailsService userDetailsService, TokenRepository tokenRepository, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.tokenRepository = tokenRepository;
